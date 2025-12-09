@@ -1,0 +1,1 @@
+# Bash script for running a NorESM2.3 case
