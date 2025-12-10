@@ -9,7 +9,7 @@ perror(){
   fi
 }
 
-noresm_dir_name="NorESM3"
+noresm_dir_name="NorESM3-mvertens"
 export PATH=${paths_noresm}/${noresm_dir_name}/cime/scripts:${PATH}
 nyears=13
 resubmit=0
