@@ -9,9 +9,14 @@ perror(){
   fi
 }
 
-noresm_dir_name="NorESM3"
+noresm_dir_name="NorESM3-mvertens"
+
+cd ${paths_noresm}/${noresm_dir_name}
+./describe_version
+perror $? "Problem with describe_version"
+
 export PATH=${paths_noresm}/${noresm_dir_name}/cime/scripts:${PATH}
-ndays=15
+ndays=14
 resubmit=0
 project="nn2345k"
 runStartDate="0001-01-02"
@@ -19,7 +24,7 @@ res="ne16pg3_ne16pg3_mtn14"
 compset="1850_CAM70%LT%NORESM%CAMoslo_CLM60%SP_CICE%PRES_DOCN%DOM_MOSART_DGLC%NOEVOLVE_SWAV_SESP"
 wall_clock_time="00:59:00"
 queue="normal"
-tag="noresm_beta07_freerun_nudged"
+tag="noresm_beta07_nudged"
 compset_tag="NF1850"
 case_dir="/cluster/projects/nn2345k/ovewh/Nudging_verifcation"
 
