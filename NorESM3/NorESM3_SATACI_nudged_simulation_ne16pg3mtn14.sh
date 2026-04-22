@@ -7,23 +7,23 @@ perror(){
   fi
 }
 
-noresm_dir_name="NorESM3-mvertens"
+noresm_dir_name="NorESM3-SATACI"
 
 
-cd ${paths_noresm}/${noresm_dir_name}
-./describe_version
-perror $? "Problem with describe_version"
+#cd ${paths_noresm}/${noresm_dir_name}
+#./describe_version
+#perror $? "Problem with describe_version"
 
 export PATH=${paths_noresm}/${noresm_dir_name}/cime/scripts:${PATH}
-nmonths=27
+nmonths=13
 resubmit=0
 project="nn2345k"
-runStartDate="2018-09-01"
+runStartDate="2019-12-01"
 res="ne16pg3_ne16pg3_mtn14"
 compset="HIST_CAM70%LT%NORESM%CAMoslo_CLM60%SP_CICE%PRES_DOCN%DOM_MOSART_DGLC%NOEVOLVE_SWAV_SESP"
-wall_clock_time="12:59:00"
+wall_clock_time="14:59:00"
 queue="normal"
-tag="SATACI_beta11_UVnudged"
+tag="SATACI_beta11_UVnudged_nodust_rad"
 compset_tag="NFLHIST"
 case_dir="/cluster/projects/nn2345k/ovewh/SATACI_simulations/cases"
 
@@ -50,6 +50,7 @@ cd ${case_dir}/${case_name}
 ./xmlchange NTASKS=-4
 ./xmlchange STOP_OPTION="nmonths"
 ./xmlchange --subgroup case.st_archive JOB_WALLCLOCK_TIME='03:00:00'
+./xmlchange --subgroup case.compress JOB_WALLCLOCK_TIME='03:00:00'
 ./xmlchange STOP_N="${nmonths}"
 ./xmlchange RUN_STARTDATE="${runStartDate}"
 ./xmlchange RUN_TYPE=startup
@@ -206,9 +207,6 @@ perror $? "Problem with writing user_nl_cam"
 cat > user_nl_clm << EOF
 paramfile = '/cluster/shared/noresm/inputdata/lnd/clm2/paramdata/ctsm60_params.5.3.045_noresm_v14_c260117.nc'
 snow_thermal_cond_glc_method = 'Jordan1991'
-# use_init_interp = .true.
-# init_interp_fill_missing_urban_with_HD = .true.
-# finidat = '/cluster/work/users/kjetisaa/archive/i1850.ne30pg3_tn14.ctsm5.4.002_noresm_v1.CPLHIST_postADspinup_SHORT.2025-12-18/rest/0071-01-01-00000/i1850.ne30pg3_tn14.ctsm5.4.002_noresm_v1.CPLHIST_postADspinup_SHORT.2025-12-18.clm2.r.0071-01-01-00000.nc'
 EOF
 
 # perror $? "Problem with writing user_nl_clm"
@@ -219,5 +217,5 @@ perror $? "Problem with preview_namelists"
 ./case.build
 perror $? "Problem with case.build"
 
-./case.submit
-perror $? "Problem with case.submit"
+#./case.submit
+#perror $? "Problem with case.submit"
