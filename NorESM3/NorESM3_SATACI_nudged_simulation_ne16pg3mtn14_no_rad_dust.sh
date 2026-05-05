@@ -168,6 +168,8 @@ use_aerocom = .true.
 
 history_aerosol = .true.
 
+no_rad_dust_active = .true.
+
 history_amwg = .true.
 history_aerosol_radiation = .true.
 
