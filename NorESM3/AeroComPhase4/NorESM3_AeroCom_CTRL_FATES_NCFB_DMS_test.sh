@@ -68,7 +68,7 @@ setup_case "${case_name}"
 cd ${case_dir}/${case_name} || exit 1
 
 # A negative NTASKS value specifies a number of nodes in CIME.
-./xmlchange NTASKS=-2
+./xmlchange NTASKS=-4
 ./xmlchange RUN_TYPE=startup
 ./xmlchange RUN_STARTDATE="${runStartDate}"
 ./xmlchange CALENDAR=GREGORIAN
@@ -113,10 +113,13 @@ Nudge_Tcoef = 0.0
 Nudge_PSprof = 0
 Nudge_PScoef = 0.0
 
+! DMS and ocean POM (chlor_a) climatology from N1850 #517, years 1496-1525
+! (D. Olivie, 2026-09-24). The file is dated 1850, so both cycle years are 1850.
 dms_source = 'lana'
 dms_source_type = 'CYCLICAL'
-dms_cycle_year = 2000
-ocean_filename = 'dms-hamocc-dow-taylor_chlor_a-lanaclim_NHIST_f19_tn14_20190710_1995-2005_cycle_version20260209.nc'
+dms_cycle_year = 1850
+opom_cycle_year = 1850
+ocean_filename = 'dms-hamocc-dow-taylor_chlor_a-lanaclim_n1850GaxgGHG.LM.n30b24.517.20260911_1496-1525_cycle_version20260924.nc'
 ocean_filepath = '\$DIN_LOC_ROOT/noresm-only/atm/cam/camoslo'
 
 EOF
