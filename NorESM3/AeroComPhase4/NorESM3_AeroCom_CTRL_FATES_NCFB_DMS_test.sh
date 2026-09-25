@@ -1,5 +1,6 @@
 #!/bin/bash
-# One-month CAM-Oslo DMS test on two Betzy nodes.
+# One-month test (Jan 2000, devel queue) of the AeroCom CTRL setup in
+# NorESM3_AeroCom_CTRL_FATES_NCFB.sh: land IC, 1850 land use, AMIP SST, DMS.
 
 perror(){
   if [ $1 -ne 0 ]; then
@@ -28,9 +29,22 @@ resubmit=0
 
 user_mods_dir="/cluster/work/users/ovewh/CAM/cime_config/usermods_dirs/CMIP7_HistoryAerocom"
 
-land_ic_dir="/cluster/work/users/ovewh/restarts/n1850GaxgGHG.LM.n30b24.517.20260911/1516-01-01-00000"
-land_ic=$(ls ${land_ic_dir}/*.clm2.r.*.nc 2>/dev/null | head -n 1)
-perror $? "Could not find CLM restart file in ${land_ic_dir}"
+# Same land initial condition, land use and SSTs as the CTRL run
+land_ic_case="n1850GaxgGHG.LM.nor30b24.525.20260923"
+land_ic_date="1556-01-01-00000"
+land_ic="/cluster/work/users/ovewh/restarts/${land_ic_case}/${land_ic_date}/${land_ic_case}.clm2.r.${land_ic_date}.nc"
+if [ ! -r "${land_ic}" ]; then
+    echo "ERROR: Could not find CLM restart file ${land_ic}"
+    exit 1
+fi
+# 1850 steady-state land use as in the piControl. The HIST default (transient
+# LUH3) moves the 1850 land-use state toward year 2000 in one day and crashes
+# FATES (EDPatchDynamicsMod.F90:1667, run 1747058).
+fluh_timeseries="/cluster/shared/noresm/inputdata/lnd/clm2/surfdata_esmf/ctsm5.4.0/fates_LU_data_CMIP7/LUH3_1850_steadystate_ne16np4_c260508.nc"
+
+sstice_file="/cluster/shared/noresm/inputdata/atm/cam/sst/sst_input4MIPs_SSTsAndSeaIce_CMIP_PCMDI-AMIP-1-1-10_gn_187001-202212_c20260924.nc"
+sstice_year_start=1870
+sstice_year_end=2022
 
 nudge_datapath="/cluster/shared/noresm/inputdata/noresm-only/inputForNudging/era5"
 nudge_meshfile="/cluster/shared/noresm/inputdata/noresm-only/inputForNudging/era5_UVPS_ESMF_Mesh_cdf5.nc"
@@ -72,6 +86,8 @@ cd ${case_dir}/${case_name} || exit 1
 ./xmlchange RUN_TYPE=startup
 ./xmlchange RUN_STARTDATE="${runStartDate}"
 ./xmlchange CALENDAR=GREGORIAN
+./xmlchange SSTICE_DATA_FILENAME="${sstice_file}"
+./xmlchange SSTICE_YEAR_ALIGN=${sstice_year_start},SSTICE_YEAR_START=${sstice_year_start},SSTICE_YEAR_END=${sstice_year_end}
 ./xmlchange STOP_OPTION="nmonths"
 ./xmlchange STOP_N="${nmonths}"
 ./xmlchange RESUBMIT="${resubmit}"
@@ -126,6 +142,7 @@ EOF
 
 cat > user_nl_clm << EOF
 finidat = '${land_ic}'
+fluh_timeseries = '${fluh_timeseries}'
 fates_history_dimlevel = 1,2
 EOF
 

@@ -43,35 +43,44 @@ newest `rpointer.cpl.YYYY-MM-DD-SSSSS` in `RUNDIR` and stops with an error
 if a job would start after 2022. It uses only `xmlquery` and `xmlchange`, so
 it should work unchanged on Olivia.
 
-## Model code: copy the Betzy checkout, don't re-clone
+## Model code
 
-The script builds from `/cluster/work/users/ovewh/CAM` on Betzy: NorESM CAM
-(fork `github.com/Ovewh/CAM`, `noresm3_0_048_cam6_4_121-3-ge72857a9`). This
-working tree has **uncommitted changes** that the run depends on, so a fresh
-clone of any branch will not reproduce it. Among them:
+The script builds from NorESM CAM on branch `noresm_aerocom_test` of the
+owner's fork, `https://github.com/Ovewh/CAM`, commit `c32ac099`. This commit
+includes the nudging file limit raised from 100 to 1000; without it, the 276
+nudging files fail at build-namelist with "nudge_filenames has exceeded the
+dimension size". It also includes the `CMIP7_HistoryAerocom` user mods and
+`oslo_aero_3_0a019`.
 
-- `src/physics/cam/nudging.F90` (`maxfiles` 100 → 1000) and
-  `bld/namelist_files/namelist_definition.xml` (`Nudge_Filenames` dimension
-  100 → 1000). Without these, the 276 nudging files fail at build-namelist
-  with "nudge_filenames has exceeded the dimension size".
-- `cime_config/usermods_dirs/CMIP7_HistoryAerocom/` (`user_nl_cam` edited,
-  `shell_commands` untracked).
-- `src/physics/cam/cam_diagnostics.F90` (extra `RELHUM<p>` output fields).
-- Submodules checked out at tags other than the recorded pointers:
-  CTSM `ctsm5.4.042_noresm_v4`, FATES `sci.1.92.5_api.46.0.0_nor_sci7_api2`,
-  cime `cime6.1.173_noresm_v0`, ccs_config `ccs_config_noresm0.0.72`,
-  CMEPS `cmeps1.1.57_noresm_v0`, CDEPS `cdeps1.0.94_noresm_v1`,
-  CICE `noresm_cice6_6_1_20251129_v2`, MOSART `mosart1.1.12_noresm_v3`,
-  oslo_aero `oslo_aero_3_0a019`.
+```bash
+git clone -b noresm_aerocom_test https://github.com/Ovewh/CAM.git CAM
+cd CAM && git checkout c32ac099
+./bin/git-fleximod update
+```
 
-Copy the whole tree (about 415 MB plus `.git`), for example
-`rsync -a betzy:/cluster/work/users/ovewh/CAM/ <olivia path>/CAM/`, and
-confirm `git status` and `git submodule status` match on both machines. This
-`ccs_config` already has an `olivia` machine definition.
+Check the component tags (`git -C <path> describe --tags`). These must match
+the tested Betzy build:
+
+| Submodule | Tag |
+|---|---|
+| `src/chemistry/oslo_aero` | `oslo_aero_3_0a019` |
+| `components/clm` | `ctsm5.4.042_noresm_v4` |
+| `components/clm/src/fates` | `sci.1.92.5_api.46.0.0_nor_sci7_api2` |
+| `components/cdeps` | `cdeps1.0.94_noresm_v1` |
+| `components/cice` | `noresm_cice6_6_1_20251129_v2` |
+| `components/mosart` | `mosart1.1.12_noresm_v3` |
+
+`cime`, `ccs_config` and `components/cmeps` will come out newer than on
+Betzy (`cime6.5.12_noresm_v1`, `ccs_config_noresm0.0.75`,
+`cmeps1.1.57_noresm_v5` instead of `cime6.1.173_noresm_v0`,
+`ccs_config_noresm0.0.72`, `cmeps1.1.57_noresm_v0`). The owner has accepted
+this; keep the `.gitmodules` versions. The Olivia machine details below come
+from `ccs_config_noresm0.0.72`, so re-check them in
+`ccs_config/machines/olivia/` after cloning.
 
 ## What to change for Olivia
 
-From `ccs_config/machines/olivia/` in that checkout:
+From `ccs_config/machines/olivia/` (read from `ccs_config_noresm0.0.72` on Betzy; re-check in your clone):
 
 | Item | Betzy (current script) | Olivia |
 |---|---|---|
@@ -117,7 +126,8 @@ and copy them from the same relative path under `$DIN` on Betzy.
 
 ## Suggested order of work
 
-1. Copy the CAM checkout and confirm it matches (see above).
+1. Clone the CAM branch and check that the submodule tags match (see "Model
+   code").
 2. Make an Olivia copy of the script (for example
    `NorESM3_AeroCom_CTRL_FATES_NCFB_olivia.sh`) with the machine changes above.
    Consider adding a `--no-submit` option that stops after `preview_namelists`,
@@ -153,6 +163,14 @@ and copy them from the same relative path under `$DIN` on Betzy.
   files with `[ -r file ]` instead, as the script now does.
 - Do not start from the older `n1850GaxgGHG.LM.n30b24.517.20260911` 1516
   restart; the owner chose the #525 1556 restart.
+- If `fluh_timeseries` is left at the HIST default (transient
+  `LUH3_timeseries_850-2024…`), FATES tries to move the restart's 1850 land
+  use to the year-2000 state in one day. The log shows "See luc mortalities"
+  values above 1, then the run crashes within minutes at
+  `EDPatchDynamicsMod.F90` line 1667 ("Buffer patch still has area"; Betzy job
+  1747058). The 1850 steady-state file avoids this.
+  `NorESM3_AeroCom_CTRL_FATES_NCFB_DMS_test.sh` uses the same land and SST
+  settings as the CTRL script.
 - The CRUJRA land-only script in this directory
   (`NorESM3_FATES_DATM_CRUJRA_1850_2000.sh`) is a separate, optional workflow
   for a present-day land state. It is not part of this task.
