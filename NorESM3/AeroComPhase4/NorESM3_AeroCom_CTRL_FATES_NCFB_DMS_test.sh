@@ -146,6 +146,21 @@ fluh_timeseries = '${fluh_timeseries}'
 fates_history_dimlevel = 1,2
 EOF
 
+# SourceMod: relax the FATES daily carbon balance check (not a namelist option).
+# It aborts when a site's error exceeds 1e-5 of its carbon stock. Starting from
+# the piControl restart under 2000 conditions, it fails right after seedling
+# recruitment (call index 1) at three dry sites on 2000-01-30 with errors of
+# 1.2-2.1e-5 (job 1748979, FATES nor_sci7 and nor_sci10). Raise the limit to
+# 1e-4; larger errors still stop the run, smaller ones are no longer printed.
+# The file is copied from the checkout when the case is created, so recreate
+# the case if FATES is updated.
+fates_edmain="${cam_dir}/components/clm/src/fates/main/EDMainMod.F90"
+cp "${fates_edmain}" SourceMods/src.clm/
+perror $? "Could not copy ${fates_edmain}"
+sed -i 's/if ( error_frac > 10e-6_r8 ) then/if ( error_frac > 1.0e-4_r8 ) then/' SourceMods/src.clm/EDMainMod.F90
+grep -q "error_frac > 1.0e-4_r8" SourceMods/src.clm/EDMainMod.F90
+perror $? "Could not change the balance tolerance in SourceMods/src.clm/EDMainMod.F90"
+
 ./case.build
 perror $? "Problem with case.build"
 

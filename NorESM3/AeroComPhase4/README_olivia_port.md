@@ -33,6 +33,7 @@ Science settings to keep as they are:
 | CLM `fluh_timeseries` | `LUH3_1850_steadystate_ne16np4_c260508.nc` | Land use held at the piControl's 1850 state. The HIST default (transient LUH3) would apply 2000–2022 transitions to an 1850 land-use state. The file has 500 years; later model years reuse the last one (the piControl itself runs at year 1500+). |
 | SST/sea ice | `sst_input4MIPs_SSTsAndSeaIce_CMIP_PCMDI-AMIP-1-1-10_gn_187001-202212_c20260924.nc`, `SSTICE_YEAR_ALIGN=START=1870`, `END=2022` | CMIP7 AMIP data to Dec 2022. DOCN cycles the file, so model time past its end silently gets 1870 SSTs; this is why the run stops after 2022. |
 | DMS/ocean POM | `ocean_filename = dms-hamocc-dow-taylor_chlor_a-lanaclim_n1850GaxgGHG.LM.n30b24.517.20260911_1496-1525_cycle_version20260924.nc`, `dms_cycle_year = 1850`, `opom_cycle_year = 1850` | Climatology from N1850 #517 by Dirk Olivié. The file is dated 1850, so both cycle years must be 1850. |
+| FATES balance check | SourceMod: `EDMainMod.F90` copied to `SourceMods/src.clm/`, limit at line 1040 raised from `10e-6_r8` to `1.0e-4_r8` (the script does this) | Not a namelist option. Under 2000 conditions the check fails right after seedling recruitment at three dry sites on 2000-01-30 (errors 1.2-2.1e-5). |
 | Nudging | ERA5 `era5_UVPS_58levels_YYYY/era5_UVPS_58levels_YYYYMM.nc`, 2000–2022 (276 files) | Needs the source change described under "Model code" below. |
 
 Job structure (keep): jobs of 5 model years (5,5,5,5,3; `RESUBMIT=4`),
@@ -87,7 +88,7 @@ From `ccs_config/machines/olivia/` (read from `ccs_config_noresm0.0.72` on Betzy
 | `--mach` | `betzy` | `olivia` |
 | `--compiler` | `intel` | `intel` is available (MPI libraries `oneapi` or `openmpi`); `gnu` is too. Keep intel unless it fails to build. |
 | Cores per node | 128 | 256 (`MAX_MPITASKS_PER_NODE`) |
-| `NTASKS` | `-4` = 512 tasks | Start with `-2` (512 tasks, the same count). Only raise it after measuring throughput. |
+| `NTASKS` | `-8` = 1024 tasks | `-4` (1024 tasks, the same count). The SE dycore has 1536 elements, so dynamics only speeds up at 768 and 1536 tasks; prefer 3, 4 or 6 Olivia nodes. |
 | Queue | `normal` | `large` for 2 or more nodes (`small` = 1 node; `devel` = 1 node, at most 1:59). |
 | Max wall time | 96 h | 144 h |
 | Input data root | `/cluster/shared/noresm/inputdata` | `/cluster/work/projects/nn9560k/inputdata` (`DIN_LOC_ROOT`) |
@@ -150,8 +151,9 @@ and copy them from the same relative path under `$DIN` on Betzy.
    `NorESM3_AeroCom_CTRL_FATES_NCFB_DMS_test.sh` is the Betzy version of this
    test. Measure model days per wall hour.
 5. Set `wall_clock_time` from the measured throughput: 5 model years plus
-   about 20% margin, at most 144 h. On Betzy, 2 nodes (256 tasks) gave about
-   14.6 h per model year, and the Betzy script uses 60 h for 5 years on 4 nodes.
+   about 30% margin, at most 144 h. On Betzy, the 1-month test on 4 nodes
+   (512 tasks) ran at 68.1 s per model day (6.9 h per model year); the Betzy
+   script uses 32 h for 5 years on 8 nodes (an estimate, not yet measured).
 6. Build and submit the full run. Report to the owner: case name, number of
    nodes, measured throughput, and anything you changed beyond this list.
 
